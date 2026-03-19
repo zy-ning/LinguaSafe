@@ -1,0 +1,28 @@
+{TASK}
+
+Please provide the {TGT} transcreation for the {SRC} sentences.
+Source: {INPUT}
+Target: {TRANS}
+
+I’m not satisfied with this target, because some defects exist: {EST}
+
+Critical errors inhibit comprehension of the text. Major errors disrupt the flow, but what the text is trying to say is still understandable. Minor errors are technical errors but do not disrupt the flow or hinder comprehension.
+
+Transcreation is the process of adapting a message from one language to another, and instead of direct translation, it involves recreating the message in the target language while maintaining the original intent, style, tone, and context meaning. More than just translation accuracy, transcreation requires a deep understanding of the cultural nuances and context of the target language, focusing more on the specific task requirements than the literal translation.
+When the requirements of accurate translation (MQM annotations) conflict with the task requirements, the task requirements should be prioritized.
+
+Your refinement of transcreation should also consider the evaluation result based on the specific task requirements:
+- task_acc: a float value between 0 and 1 indicating if the translation is semantically functional and contextually appropriate for the given task.
+- task_error: a string indicating the main issue with the translation with respect to the task requirements.
+
+Upon reviewing task discription and error information, please proceed to compose the final {TGT} transcreation to the sentence: {INPUT}. First, based on the defects information locate the error span in the target segment, comprehend its nature, and rectify it. Then, imagine yourself as a native {TGT} speaker, ensuring that the rectified target segment is not only precise but also faithful to the source segment. Finally, ensure that the rectified target sentence is holistic, obeying the task and format requirements.
+
+{NOTE}
+
+Your answer should follow the following template:
+The output should be a markdown code snippet formatted in the following schema, including the leading and trailing "```toml" and "```":
+
+```toml
+[refinement]
+Target = ""  # The final transcreation. Please use escape characters for the quotation marks in the sentence.
+```

@@ -1,0 +1,60 @@
+[lang]
+languages = ["English", "Chinese", "Arabic", "Russian", "Serbian", "Thai", "Korean", "Vietnamese", "Czech", "Hungarian", "Bengali", "Malay"]
+ISO = ["en", "zh", "ar", "ru", "sr", "th", "ko", "vi", "cs", "hu", "bn", "ms"]
+
+[meta]
+short = ["EC", "CIA", "HM", "PP", "FJ"]
+long = [
+  "Explicit Content",
+  "Crimes & Illegal Activities",
+  "Harm & Misuse",
+  "Privacy & Property",
+  "Fairness & Justice",
+]
+
+[EC]
+  name = "Explicit Content"
+  subtypes = [
+    "Violence",
+    "Erotic Content",
+    "Profanity",
+    "Other Explicit Content",
+  ]
+
+[CIA]
+  name = "Crimes & Illegal Activities"
+  subtypes = [
+    "Controlled Items",
+    "Terrorism",
+    "Sex-Related Crimes",
+    "Animal Abuse/Cruelty/Poaching",
+    "Violent Crimes",
+    "Financial Crimes",
+    "Digital Crimes",
+    "Other Crimes",
+  ]
+
+[HM]
+  name = "Harm & Misuse"
+  subtypes = [
+    "Physical Harm",
+    "Mental Harm",
+    "Code Misuse",
+    "Misinformation Misuse",
+    "Bio-Chemical Misuse",
+  ]
+
+[PP]
+  name = "Privacy & Property"
+  subtypes = ["PII", "Privacy Violation", "IP", "Business Secrets"]
+
+[FJ]
+  name = "Fairness & Justice"
+  subtypes = [
+    "Gender",
+    "Race",
+    "Age",
+    "Religion",
+    "Sex Orientation",
+    "Other Hate Speech",
+  ]

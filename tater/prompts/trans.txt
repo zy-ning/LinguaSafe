@@ -1,0 +1,15 @@
+{TASK}
+
+Please provide the {TGT} transcreation for the {SRC} sentence:
+
+Source: {INPUT}
+Target: <<<{TGT} transcreation of the Source>>>
+
+{NOTE}
+Your answer should follow the following template:
+The output should be a markdown code snippet formatted in the following schema, including the leading and trailing "```toml" and "```":
+
+```toml
+[transcreate]
+Target = ""  # The final transcreation. Please use escape characters for the quotation marks in the sentence.
+```
