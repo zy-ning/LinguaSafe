@@ -381,7 +381,7 @@ class LinguaSafeEvaluator:
 
                         safe_tasks.append(
                             {
-                                "model_name": self.args.assitSLM,
+                                "model_name": self.args.evaluator,
                                 "prompt": SAFE_TEMPLATE.format(
                                     subtype=subt,
                                     user=record["prompt"],
@@ -644,8 +644,8 @@ def parse_arguments():
     parser.add_argument(
         "--assitSLM",
         type=str,
-        default="internlm3-8b-instruct",
-        help="Assistant SLM model",
+        default=None,
+        help="Assistant SLM model (Optional, default to same as evaluator)",
     )
     parser.add_argument(
         "--limit", type=int, default=64, help="Maximum number of workers"
@@ -668,6 +668,9 @@ def main():
     # Validate language argument
     if args.lang != "all":
         assert args.lang in ISO2LANG, f"Language {args.lang} not supported"
+
+    if args.assitSLM is None:
+        args.assitSLM = args.evaluator
 
     if not os.path.exists(PROJECT_DIR / "logs"):
         os.makedirs(PROJECT_DIR / "logs")
