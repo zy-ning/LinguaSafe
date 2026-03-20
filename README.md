@@ -18,15 +18,14 @@ Create `api.toml` (already in `.gitignore`):
 ```toml
 [openai]
 api_key = "sk-..."
-models = ["gpt-4o-2024-11-20", "gpt-4o-mini"]
+models = ["gpt-4o-2024-11-20", "gpt-5-mini"]
 
 [local]
 base_url = "http://localhost:8000/v1"
-models = ["Llama-3.1-8B-Instruct", "Qwen2.5-7B-Instruct"]
+models = ["Llama-3.1-8B-Instruct", "..."]
 
 [oai_moderate]
 api_key = "sk-..."
-base_url = "https://api.openai-proxy.com/v1"
 models = ["omni-moderation-latest"]
 ```
 
@@ -36,29 +35,12 @@ Each section maps to an API endpoint. `models` lists which model names route to 
 
 ```bash
 # Evaluate a model across all languages
-python -m linguasafe.eval --model gpt-4o-2024-11-20
+python -m linguasafe.eval --model gpt-4o-2024-11-20 --assitSLM gpt-5-mini
 
 # Single language
 python -m linguasafe.eval --model gpt-4o-2024-11-20 --lang zh
-
-# Generalization mode (non-language-specific prompts only)
-python -m linguasafe.eval --model gpt-4o-2024-11-20 --generalization
-
-# Jailbreak robustness (templates: DAN, AIM, STAN, DUDE, MONGO, EVIL_BOT)
-python -m linguasafe.eval --model gpt-4o-2024-11-20 --jailbreak DAN
 ```
 
 Re-running the same command resumes from where it left off — already-completed tasks are skipped automatically.
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--model` | `gpt-4o-2024-11-20` | Model under evaluation |
-| `--lang` | `all` | ISO language code, or `all` |
-| `--generalization` | off | Restrict to non-language-specific prompts |
-| `--jailbreak` | — | Jailbreak template to wrap prompts |
-| `--assitSLM` | `internlm3-8b-instruct` | SLM used for reject/safety judging |
-| `--limit` | `64` | Parallel worker threads |
 
 Results are saved to `logs/res/`.
