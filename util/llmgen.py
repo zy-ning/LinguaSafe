@@ -15,6 +15,7 @@ from misc import PROJECT_DIR
 @dataclass
 class ClientConfig:
     """Configuration for an API client."""
+
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     models: List[str] = field(default_factory=list)
@@ -24,6 +25,7 @@ class ClientConfig:
 @dataclass
 class Task:
     """Represents a single LLM generation task."""
+
     prompt: Optional[str] = None
     messages: Optional[List[Dict[str, str]]] = None
     model_name: Optional[str] = None
@@ -80,14 +82,14 @@ class LLMClientManager:
                     api_key=api_config.get("api_key"),
                     base_url=api_config.get("base_url"),
                     models=api_config.get("models", []),
-                    prefix=api_config.get("prefix", "")
+                    prefix=api_config.get("prefix", ""),
                 )
 
                 # Only create client if it has either api_key or base_url
                 if client_config.api_key or client_config.base_url:
                     self.clients[config_key] = {
-                        "client": self._create_client(client_config, None),
-                        "config": client_config
+                        "client": self._create_client(client_config),
+                        "config": client_config,
                     }
 
                     # Map models to clients
@@ -144,11 +146,15 @@ class LLMGenerator:
         return response.choices[0].message.content
 
     @staticmethod
-    def _prompt_to_messages(prompt: str, use_system: bool = True) -> List[Dict[str, str]]:
+    def _prompt_to_messages(
+        prompt: str, use_system: bool = True
+    ) -> List[Dict[str, str]]:
         """Convert a prompt to a list of messages."""
         messages = [{"role": "user", "content": prompt}]
         if use_system:
-            messages.insert(0, {"role": "system", "content": "You are a helpful assistant."})
+            messages.insert(
+                0, {"role": "system", "content": "You are a helpful assistant."}
+            )
         return messages
 
 
@@ -177,7 +183,9 @@ class BatchProcessor:
                 tasks = json.load(f)
 
         # Convert to Task objects
-        task_objects = [self._dict_to_task(task_dict, default_model) for task_dict in tasks]
+        task_objects = [
+            self._dict_to_task(task_dict, default_model) for task_dict in tasks
+        ]
 
         output_path = pathlib.Path(output_file)
         output_path.touch(exist_ok=True)
@@ -186,20 +194,35 @@ class BatchProcessor:
         completed_hashes, existing_results = self._load_existing_results(output_path)
         task_hashes = [self._generate_task_hash(task) for task in task_objects]
 
-        tasks_to_fix = self._identify_error_tasks(task_objects, task_hashes, existing_results)
-        tasks_to_run = self._identify_new_tasks(task_objects, task_hashes, completed_hashes)
+        tasks_to_fix = self._identify_error_tasks(
+            task_objects, task_hashes, existing_results
+        )
+        tasks_to_run = self._identify_new_tasks(
+            task_objects, task_hashes, completed_hashes
+        )
 
         # Process tasks
         if tasks_to_fix:
             print(f"Fixing {len(tasks_to_fix)} error tasks...")
-            self._process_tasks(tasks_to_fix, output_path, check_func, max_retries, max_workers, is_fix=True)
+            self._process_tasks(
+                tasks_to_fix,
+                output_path,
+                check_func,
+                max_retries,
+                max_workers,
+                is_fix=True,
+            )
 
         if tasks_to_run:
             print(f"Processing {len(tasks_to_run)} new tasks...")
-            self._process_tasks(tasks_to_run, output_path, check_func, max_retries, max_workers)
+            self._process_tasks(
+                tasks_to_run, output_path, check_func, max_retries, max_workers
+            )
 
         # Generate final results
-        final_results = self._compile_final_results(task_objects, task_hashes, existing_results)
+        final_results = self._compile_final_results(
+            task_objects, task_hashes, existing_results
+        )
         self._save_final_results(final_results, output_path.with_suffix(".res.jsonl"))
 
         print(f"Batch processing completed. {len(self.results)} tasks processed.")
@@ -208,8 +231,17 @@ class BatchProcessor:
     def _dict_to_task(self, task_dict: Dict, default_model: str) -> Task:
         """Convert dictionary to Task object."""
         extra_params = {
-            k: v for k, v in task_dict.items()
-            if k not in ["prompt", "messages", "model_name", "temperature", "max_tokens", "top_p"]
+            k: v
+            for k, v in task_dict.items()
+            if k
+            not in [
+                "prompt",
+                "messages",
+                "model_name",
+                "temperature",
+                "max_tokens",
+                "top_p",
+            ]
         }
 
         return Task(
@@ -219,7 +251,7 @@ class BatchProcessor:
             temperature=task_dict.get("temperature", 1.0),
             max_tokens=task_dict.get("max_tokens", 1024),
             top_p=task_dict.get("top_p", 0.95),
-            extra_params=extra_params
+            extra_params=extra_params,
         )
 
     def _generate_task_hash(self, task: Task) -> str:
@@ -227,7 +259,9 @@ class BatchProcessor:
         use_system = "gemma" not in (task.model_name or "").lower()
 
         if task.prompt:
-            content = json.dumps(self.generator._prompt_to_messages(task.prompt, use_system))
+            content = json.dumps(
+                self.generator._prompt_to_messages(task.prompt, use_system)
+            )
         else:
             content = json.dumps(task.messages)
 
@@ -253,51 +287,97 @@ class BatchProcessor:
 
         return completed_hashes, existing_results
 
-    def _identify_error_tasks(self, tasks: List[Task], task_hashes: List[str], existing_results: List[Dict]) -> List[tuple]:
+    def _identify_error_tasks(
+        self, tasks: List[Task], task_hashes: List[str], existing_results: List[Dict]
+    ) -> List[tuple]:
         """Identify tasks that failed and need to be retried."""
         error_hashes = {
-            r["task_hash"] for r in existing_results
-            if r.get("status") == "error"
+            r["task_hash"] for r in existing_results if r.get("status") == "error"
         }
 
         return [
-            (idx, task) for idx, (task, task_hash) in enumerate(zip(tasks, task_hashes))
+            (idx, task)
+            for idx, (task, task_hash) in enumerate(zip(tasks, task_hashes))
             if task_hash in error_hashes
         ]
 
-    def _identify_new_tasks(self, tasks: List[Task], task_hashes: List[str], completed_hashes: set) -> List[tuple]:
+    def _identify_new_tasks(
+        self, tasks: List[Task], task_hashes: List[str], completed_hashes: set
+    ) -> List[tuple]:
         """Identify new tasks that haven't been processed."""
         return [
-            (idx, task) for idx, (task, task_hash) in enumerate(zip(tasks, task_hashes))
+            (idx, task)
+            for idx, (task, task_hash) in enumerate(zip(tasks, task_hashes))
             if task_hash not in completed_hashes
         ]
 
-    def _process_tasks(self, tasks: List[tuple], output_path: pathlib.Path,
-                      check_func: Optional[Callable], max_retries: int,
-                      max_workers: int, is_fix: bool = False):
+    def _process_tasks(
+        self,
+        tasks: List[tuple],
+        output_path: pathlib.Path,
+        check_func: Optional[Callable],
+        max_retries: int,
+        max_workers: int,
+        is_fix: bool = False,
+    ):
         """Process a list of tasks using thread pool."""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_task = {
-                executor.submit(self._process_single_task, task, idx, output_path,
-                              check_func, max_retries, is_fix): idx
-                for idx, task in tasks
-            }
+        total = len(tasks)
+        completed = [0]
+        stop_event = threading.Event()
 
-            try:
-                for future in concurrent.futures.as_completed(future_to_task):
-                    task_id = future_to_task[future]
-                    try:
-                        future.result()
-                    except Exception as exc:
-                        action = "fix" if is_fix else "process"
-                        print(f"Task {task_id} generated an exception during {action}: {exc}")
-            except KeyboardInterrupt:
-                print("Processing interrupted by user.")
-                executor.shutdown(wait=False)
-                raise
+        def heartbeat():
+            while not stop_event.wait(20):
+                pct = completed[0] / total * 100 if total else 100.0
+                print(f"[Heartbeat] Progress: {completed[0]}/{total} ({pct:.1f}%)")
 
-    def _process_single_task(self, task: Task, task_id: int, output_path: pathlib.Path,
-                           check_func: Optional[Callable], max_retries: int, is_fix: bool):
+        hb_thread = threading.Thread(target=heartbeat, daemon=True)
+        hb_thread.start()
+
+        try:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as executor:
+                future_to_task = {
+                    executor.submit(
+                        self._process_single_task,
+                        task,
+                        idx,
+                        output_path,
+                        check_func,
+                        max_retries,
+                        is_fix,
+                    ): idx
+                    for idx, task in tasks
+                }
+
+                try:
+                    for future in concurrent.futures.as_completed(future_to_task):
+                        task_id = future_to_task[future]
+                        completed[0] += 1
+                        try:
+                            future.result()
+                        except Exception as exc:
+                            action = "fix" if is_fix else "process"
+                            print(
+                                f"Task {task_id} generated an exception during {action}: {exc}"
+                            )
+                except KeyboardInterrupt:
+                    print("Processing interrupted by user.")
+                    executor.shutdown(wait=False)
+                    raise
+        finally:
+            stop_event.set()
+            hb_thread.join()
+
+    def _process_single_task(
+        self,
+        task: Task,
+        task_id: int,
+        output_path: pathlib.Path,
+        check_func: Optional[Callable],
+        max_retries: int,
+        is_fix: bool,
+    ):
         """Process a single task with retry logic."""
         task_hash = self._generate_task_hash(task)
 
@@ -308,14 +388,21 @@ class BatchProcessor:
                 if check_func and not check_func(generated_text):
                     raise ValueError("Check function failed")
 
-                result = self._create_result(task_id, task_hash, task, generated_text, "success", attempt)
+                result = self._create_result(
+                    task_id, task_hash, task, generated_text, "success", attempt
+                )
                 break
 
             except Exception as e:
                 if "sensitive" in str(e).lower():
                     result = self._create_result(
-                        task_id, task_hash, task, "Sorry, I can't help with that.",
-                        "success", attempt, str(e)
+                        task_id,
+                        task_hash,
+                        task,
+                        "Sorry, I can't help with that.",
+                        "success",
+                        attempt,
+                        str(e),
                     )
                     break
 
@@ -325,16 +412,25 @@ class BatchProcessor:
                     )
                     break
 
-                print(f"Task {task_id} failed: {e}, retrying ({attempt + 1}/{max_retries})")
+                print(
+                    f"Task {task_id} failed: {e}, retrying ({attempt + 1}/{max_retries})"
+                )
 
         with self.results_lock:
             self.results.append(result)
             if not is_fix or result["status"] == "success":
                 self._save_result(result, output_path)
 
-    def _create_result(self, task_id: int, task_hash: str, task: Task,
-                      generated_text: str, status: str, retries: int,
-                      error: Optional[str] = None) -> Dict:
+    def _create_result(
+        self,
+        task_id: int,
+        task_hash: str,
+        task: Task,
+        generated_text: str,
+        status: str,
+        retries: int,
+        error: Optional[str] = None,
+    ) -> Dict:
         """Create a result dictionary."""
         messages = task.messages
         if task.prompt:
@@ -362,8 +458,9 @@ class BatchProcessor:
         with open(output_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(result, ensure_ascii=False) + "\n")
 
-    def _compile_final_results(self, tasks: List[Task], task_hashes: List[str],
-                             existing_results: List[Dict]) -> List[Dict]:
+    def _compile_final_results(
+        self, tasks: List[Task], task_hashes: List[str], existing_results: List[Dict]
+    ) -> List[Dict]:
         """Compile final results from all sources."""
         final_results = []
 
@@ -378,7 +475,9 @@ class BatchProcessor:
 
         return final_results
 
-    def _find_best_result(self, task_hash: str, all_results: List[Dict]) -> Optional[Dict]:
+    def _find_best_result(
+        self, task_hash: str, all_results: List[Dict]
+    ) -> Optional[Dict]:
         """Find the best result for a given task hash (prefer success over error)."""
         success_result = None
         error_result = None
@@ -403,8 +502,11 @@ class BatchProcessor:
 def llmgen(model_name: str, messages: List[Dict[str, str]], **kwargs) -> str:
     """Legacy function for single LLM generation."""
     generator = LLMGenerator()
-    extra_params = {k: v for k, v in kwargs.items()
-                   if k not in ["temperature", "max_tokens", "top_p"]}
+    extra_params = {
+        k: v
+        for k, v in kwargs.items()
+        if k not in ["temperature", "max_tokens", "top_p"]
+    }
 
     task = Task(
         messages=messages,
@@ -412,7 +514,7 @@ def llmgen(model_name: str, messages: List[Dict[str, str]], **kwargs) -> str:
         temperature=kwargs.get("temperature", 1.0),
         max_tokens=kwargs.get("max_tokens", 1024),
         top_p=kwargs.get("top_p", 0.95),
-        extra_params=extra_params
+        extra_params=extra_params,
     )
 
     return generator.generate(task)
@@ -423,12 +525,13 @@ def prompt2msgs(prompt: str, system: bool = True) -> List[Dict[str, str]]:
     return LLMGenerator._prompt_to_messages(prompt, system)
 
 
-def llmgen_batch(tasks: Union[List[Dict], str], output_file: str, **kwargs) -> List[Dict]:
+def llmgen_batch(
+    tasks: Union[List[Dict], str], output_file: str, **kwargs
+) -> List[Dict]:
     """Legacy function for batch processing."""
     generator = LLMGenerator()
     processor = BatchProcessor(generator)
     return processor.process_batch(tasks, output_file, **kwargs)
-
 
 
 if __name__ == "__main__":
