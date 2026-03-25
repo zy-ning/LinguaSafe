@@ -8,7 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import tomli
-from openai import OpenAI
+from openai import BadRequestError, OpenAI
+
 from misc import PROJECT_DIR
 
 
@@ -134,14 +135,23 @@ class LLMGenerator:
             use_system = "gemma" not in model_name.lower()
             messages = self._prompt_to_messages(task.prompt, use_system)
 
-        response = client.chat.completions.create(
-            model=final_model_name,
-            messages=messages,
-            temperature=task.temperature,
-            max_tokens=task.max_tokens,
-            top_p=task.top_p,
-            **task.extra_params,
-        )
+        try:
+            response = client.chat.completions.create(
+                model=final_model_name,
+                messages=messages,
+                temperature=task.temperature,
+                max_tokens=task.max_tokens,
+                top_p=task.top_p,
+                **task.extra_params,
+            )
+        except BadRequestError as e:
+            if "content_filter" in str(e):
+                print("Content filtered, returning empty response.")
+                response = ""
+                return response
+            else:
+                print(e)
+                return ""
 
         return response.choices[0].message.content
 
@@ -392,14 +402,13 @@ class BatchProcessor:
                     task_id, task_hash, task, generated_text, "success", attempt
                 )
                 break
-
             except Exception as e:
-                if "sensitive" in str(e).lower():
+                if "sensitive" in str(e).lower() or "filter" in str(e).lower():
                     result = self._create_result(
                         task_id,
                         task_hash,
                         task,
-                        "Sorry, I can't help with that.",
+                        "",
                         "success",
                         attempt,
                         str(e),
